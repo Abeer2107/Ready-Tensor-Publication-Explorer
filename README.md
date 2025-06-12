@@ -32,4 +32,34 @@ The directory structure of the project:
 - `requirements.txt`: List of dependencies.
 - `run.py`: Entry point (run `cli.py` or `ui.py`).
 
+## Setup
+- Install dependencies:
+  
+  ```bash
+  pip install -r requirements.txt
+  ```
+  Note: install `tkinter` too if not included.
+
+<br>
+
+- Acquire a Gemini API key:
+  -  Go to [Google Cloud Console](https://console.cloud.google.com/).
+  -  Open or create a project with enabled `Gemini API` (Navigate to "APIs & Services", "Enable APIs and services", and Search for "Gemini API" and enable it)
+  -  Retrieve or create an API key (Go to the API's details page -> "Create credentials")
+
+<br>
+
+- Create a `.env` file in <i>this</i> project's root and include the Gemini API key there:
+
+  ```txt
+  GEMINI_API_KEY=your-api-key-here
+  ```
+
+<br>
+
+- Run:
+
+  ```bash
+  python run.py
+  ```
 
