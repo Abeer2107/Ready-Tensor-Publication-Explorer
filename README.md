@@ -63,3 +63,10 @@ The directory structure of the project:
   python run.py
   ```
 
+## Usage:
+
+The application should open to a screen listing available publications. Clicking any of them should move to a second screen displaying the content of the selected article and a chatbox that allows asking the agent about that current article.
+
+<img src=".demo/v1_screen1.png" width=49%> <img src=".demo/v1_screen2.png" width=49%>
+
+<hr>
