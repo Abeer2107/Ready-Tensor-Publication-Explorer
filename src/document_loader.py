@@ -9,21 +9,27 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 def clean_description(text):
     if not text or not isinstance(text, str):
         return "No description available"
-    # Remove markdown images
-    text = re.sub(r'!\[.*?\]\(.*?\)', '', text)
-    # Normalize whitespace
-    text = re.sub(r'\s+', ' ', text).strip()
-    return text or "No description available"
 
+    text = re.sub(r'!\[.*?\]\(.*?\)', '', text)  # Images: ![alt](url)
+    text = re.sub(r'\*{1,2}(.*?)\*{1,2}', r'\1', text)  # **bold**, *italic*
+    text = re.sub(r'_{1,2}(.*?)_{1,2}', r'\1', text)  # __bold__, _italic_
+    text = re.sub(r'^#+\s*', '', text, flags=re.MULTILINE)  # # Heading
+    text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)  # [text](url)
+    text = re.sub(r'`{1,3}(.*?)`{1,3}', r'\1', text)  # `code`
+    text = re.sub(r'<[^>]+>', '', text)  # <b>, <i>, etc.
+    text = re.sub(r'[ \t]+', ' ', text)  # Multi spaces/tabs
+    text = re.sub(r' +\n|\n +', '\n', text)  # Spaces around newlines
+    text = text.strip()
+
+    return text or "No description available"
 
 def load_and_create_vector_store(
         json_file=os.path.join("data", "publications.json"),
         persist_dir="chroma_db",
-        chunk_size=500,
-        chunk_overlap=50,
+        chunk_size=1000,
+        chunk_overlap=200,
         debug=False
 ):
-    
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     json_path = os.path.join(project_root, json_file)
 
@@ -35,15 +41,17 @@ def load_and_create_vector_store(
             publications = json.load(f)
     except json.JSONDecodeError as e:
         print(f"JSON Decode Error: {e}")
-        raise ValueError("Invalid JSON in publications.json. Please fix the syntax error.")
+        raise ValueError("publications.json is invalid")
 
     if not isinstance(publications, list):
-        raise ValueError(f"Expected a list of entries in {json_path}, got {type(publications)}")
+        raise ValueError(f"Expected a list of entries in {json_path}, found {type(publications)}")
 
     if debug:
         print(f"Loaded {len(publications)} JSON entries.")
 
     documents = []
+    titles = []
+    articles = {}
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap
@@ -59,6 +67,9 @@ def load_and_create_vector_store(
             if debug:
                 print(f"Skipping empty article for ID: {pub_id}")
             continue
+
+        titles.append(title)
+        articles[pub_id] = cleaned_text
 
         split_docs = text_splitter.split_text(cleaned_text)
         if debug:
@@ -89,8 +100,7 @@ def load_and_create_vector_store(
     if debug:
         print(f"Vector store created with {vectorstore._collection.count()} documents.")
 
-    return vectorstore
-
+    return vectorstore, titles, articles
 
 if __name__ == "__main__":
-    vectorstore = load_and_create_vector_store(debug=True)
+    vectorstore, titles, articles = load_and_create_vector_store(debug=True)
