@@ -26,7 +26,7 @@ def clean_description(text):
 def load_and_create_vector_store(
         json_file=os.path.join("data", "publications.json"),
         persist_dir="chroma_db",
-        chunk_size=2000,
+        chunk_size=1000,
         chunk_overlap=200,
         debug=False
 ):
