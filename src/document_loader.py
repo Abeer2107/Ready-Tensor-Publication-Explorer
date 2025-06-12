@@ -26,7 +26,7 @@ def clean_description(text):
 def load_and_create_vector_store(
         json_file=os.path.join("data", "publications.json"),
         persist_dir="chroma_db",
-        chunk_size=1000,
+        chunk_size=2000,
         chunk_overlap=200,
         debug=False
 ):
@@ -35,6 +35,40 @@ def load_and_create_vector_store(
 
     if not os.path.exists(json_path):
         raise FileNotFoundError(f"JSON file not found at {json_path}")
+
+    if os.path.exists(persist_dir):
+        if debug:
+            print(f"Loading existing vector store from {persist_dir}")
+        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        vectorstore = Chroma(
+            persist_directory=persist_dir,
+            embedding_function=embeddings
+        )
+
+        collection_data = vectorstore._collection.get(include=["metadatas", "documents"])
+        titles = []
+        articles = {}
+        seen_titles = set()
+        chunks = {}  # Store chunks by pub_id
+        for meta, doc in zip(collection_data["metadatas"], collection_data["documents"]):
+            title = meta.get("title", "Unknown Title")
+            pub_id = meta.get("id", "unknown")
+            if title not in seen_titles:
+                titles.append(title)
+                seen_titles.add(title)
+            if pub_id not in chunks:
+                chunks[pub_id] = []
+            chunks[pub_id].append((meta.get("chunk_index", 0), doc))
+
+        for pub_id in chunks:
+            sorted_chunks = sorted(chunks[pub_id], key=lambda x: x[0])
+            articles[pub_id] = " ".join(chunk[1] for chunk in sorted_chunks)
+        if debug:
+            print(f"Loaded {len(titles)} titles and {len(articles)} articles from vector store")
+        return vectorstore, titles, articles
+
+    if debug:
+        print(f"No vector store found at {persist_dir}; creating new one")
 
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
@@ -100,6 +134,7 @@ def load_and_create_vector_store(
     if debug:
         print(f"Vector store created with {vectorstore._collection.count()} documents.")
 
+    vectorstore.persist()
     return vectorstore, titles, articles
 
 if __name__ == "__main__":
