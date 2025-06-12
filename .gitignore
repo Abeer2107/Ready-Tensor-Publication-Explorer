@@ -172,3 +172,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Chroma vector store database
+chroma_db/
+chromadb/
